@@ -1272,6 +1272,10 @@ export const storybookDashboardSummary: DashboardSummary = {
     monthSpendCents: 67_500,
     monthBudgetCents: 250_000,
     monthUtilizationPercent: 27,
+    monthInputTokens: 3_450_000,
+    monthCachedInputTokens: 1_120_000,
+    monthOutputTokens: 420_000,
+    monthTotalTokens: 4_990_000,
   },
   pendingApprovals: 2,
   budgets: {

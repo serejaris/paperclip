@@ -514,10 +514,9 @@ export function Costs() {
   }, [byBiller]);
 
   const inferenceTokenTotal =
-    (spendData?.byAgent ?? []).reduce(
-      (sum, row) => sum + row.inputTokens + row.cachedInputTokens + row.outputTokens,
-      0,
-    );
+    (spendData?.summary.inputTokens ?? 0)
+    + (spendData?.summary.cachedInputTokens ?? 0)
+    + (spendData?.summary.outputTokens ?? 0);
 
   const topFinanceEvents = (financeData?.events ?? []) as FinanceEvent[];
   const budgetPolicies = budgetData?.policies ?? [];

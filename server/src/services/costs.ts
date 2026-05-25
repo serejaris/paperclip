@@ -114,9 +114,12 @@ export function costService(db: Db, budgetHooks: BudgetServiceHooks = {}) {
       if (range?.from) conditions.push(gte(costEvents.occurredAt, range.from));
       if (range?.to) conditions.push(lte(costEvents.occurredAt, range.to));
 
-      const [{ total }] = await db
+      const [{ total, inputTokens, cachedInputTokens, outputTokens }] = await db
         .select({
           total: sumAsNumber(costEvents.costCents),
+          inputTokens: sumAsNumber(costEvents.inputTokens),
+          cachedInputTokens: sumAsNumber(costEvents.cachedInputTokens),
+          outputTokens: sumAsNumber(costEvents.outputTokens),
         })
         .from(costEvents)
         .where(and(...conditions));
@@ -132,6 +135,9 @@ export function costService(db: Db, budgetHooks: BudgetServiceHooks = {}) {
         spendCents,
         budgetCents: company.budgetMonthlyCents,
         utilizationPercent: Number(utilization.toFixed(2)),
+        inputTokens: Number(inputTokens),
+        cachedInputTokens: Number(cachedInputTokens),
+        outputTokens: Number(outputTokens),
       };
     },
 

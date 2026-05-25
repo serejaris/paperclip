@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
-import { agents, companies, createDb, heartbeatRuns } from "@paperclipai/db";
+import { agents, companies, costEvents, createDb, heartbeatRuns } from "@paperclipai/db";
 import {
   getEmbeddedPostgresTestSupport,
   startEmbeddedPostgresTestDatabase,
@@ -47,6 +47,7 @@ describeEmbeddedPostgres("dashboard service", () => {
   }, 20_000);
 
   afterEach(async () => {
+    await db.delete(costEvents);
     await db.delete(heartbeatRuns);
     await db.delete(agents);
     await db.delete(companies);
@@ -165,5 +166,69 @@ describeEmbeddedPostgres("dashboard service", () => {
       other: 1,
       total: 3,
     });
+  });
+
+  it("includes monthly token usage even when subscription spend is zero", async () => {
+    const companyId = randomUUID();
+    const agentId = randomUUID();
+    const now = new Date();
+    const monthStart = getUtcMonthStart(now);
+    const lastMonth = new Date(monthStart.getTime() - 24 * 60 * 60 * 1000);
+
+    await db.insert(companies).values({
+      id: companyId,
+      name: "Paperclip",
+      issuePrefix: `T${companyId.replace(/-/g, "").slice(0, 6).toUpperCase()}`,
+      requireBoardApprovalForNewAgents: false,
+    });
+
+    await db.insert(agents).values({
+      id: agentId,
+      companyId,
+      name: "CodexCoder",
+      role: "engineer",
+      status: "idle",
+      adapterType: "codex_local",
+      adapterConfig: {},
+      runtimeConfig: {},
+      permissions: {},
+    });
+
+    await db.insert(costEvents).values([
+      {
+        companyId,
+        agentId,
+        provider: "openai",
+        biller: "chatgpt",
+        billingType: "subscription_included",
+        model: "gpt-5.3-codex",
+        inputTokens: 1200,
+        cachedInputTokens: 800,
+        outputTokens: 300,
+        costCents: 0,
+        occurredAt: now,
+      },
+      {
+        companyId,
+        agentId,
+        provider: "openai",
+        biller: "chatgpt",
+        billingType: "subscription_included",
+        model: "gpt-5.3-codex",
+        inputTokens: 999,
+        cachedInputTokens: 999,
+        outputTokens: 999,
+        costCents: 0,
+        occurredAt: lastMonth,
+      },
+    ]);
+
+    const summary = await dashboardService(db).summary(companyId);
+
+    expect(summary.costs.monthSpendCents).toBe(0);
+    expect(summary.costs.monthInputTokens).toBe(1200);
+    expect(summary.costs.monthCachedInputTokens).toBe(800);
+    expect(summary.costs.monthOutputTokens).toBe(300);
+    expect(summary.costs.monthTotalTokens).toBe(2300);
   });
 });

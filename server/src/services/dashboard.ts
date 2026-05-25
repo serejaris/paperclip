@@ -83,9 +83,12 @@ export function dashboardService(db: Db) {
       const monthStart = getUtcMonthStart(now);
       const runActivityDays = getRecentUtcDateKeys(now, DASHBOARD_RUN_ACTIVITY_DAYS);
       const runActivityStart = new Date(`${runActivityDays[0]}T00:00:00.000Z`);
-      const [{ monthSpend }] = await db
+      const [{ monthSpend, monthInputTokens, monthCachedInputTokens, monthOutputTokens }] = await db
         .select({
           monthSpend: sql<number>`coalesce(sum(${costEvents.costCents}), 0)::double precision`,
+          monthInputTokens: sql<number>`coalesce(sum(${costEvents.inputTokens}), 0)::double precision`,
+          monthCachedInputTokens: sql<number>`coalesce(sum(${costEvents.cachedInputTokens}), 0)::double precision`,
+          monthOutputTokens: sql<number>`coalesce(sum(${costEvents.outputTokens}), 0)::double precision`,
         })
         .from(costEvents)
         .where(
@@ -96,6 +99,11 @@ export function dashboardService(db: Db) {
         );
 
       const monthSpendCents = Number(monthSpend);
+      const monthTokenTotals = {
+        input: Number(monthInputTokens),
+        cachedInput: Number(monthCachedInputTokens),
+        output: Number(monthOutputTokens),
+      };
       const runActivityDayExpr = sql<string>`to_char(${heartbeatRuns.createdAt} at time zone 'UTC', 'YYYY-MM-DD')`;
       const runActivityRows = await db
         .select({
@@ -147,6 +155,10 @@ export function dashboardService(db: Db) {
           monthSpendCents,
           monthBudgetCents: company.budgetMonthlyCents,
           monthUtilizationPercent: Number(utilization.toFixed(2)),
+          monthInputTokens: monthTokenTotals.input,
+          monthCachedInputTokens: monthTokenTotals.cachedInput,
+          monthOutputTokens: monthTokenTotals.output,
+          monthTotalTokens: monthTokenTotals.input + monthTokenTotals.cachedInput + monthTokenTotals.output,
         },
         pendingApprovals,
         budgets: {

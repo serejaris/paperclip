@@ -19,7 +19,7 @@ import { StatusIcon } from "../components/StatusIcon";
 import { ActivityRow } from "../components/ActivityRow";
 import { Identity } from "../components/Identity";
 import { timeAgo } from "../lib/timeAgo";
-import { cn, formatCents } from "../lib/utils";
+import { cn, formatCents, formatTokens } from "../lib/utils";
 import { Bot, CircleDot, DollarSign, ShieldCheck, LayoutDashboard, PauseCircle } from "lucide-react";
 import { ActiveAgentsPanel } from "../components/ActiveAgentsPanel";
 import { ChartCard, RunActivityChart, PriorityChart, IssueStatusChart, SuccessRateChart } from "../components/ActivityCharts";
@@ -265,14 +265,21 @@ export function Dashboard() {
             />
             <MetricCard
               icon={DollarSign}
-              value={formatCents(data.costs.monthSpendCents)}
-              label="Month Spend"
+              value={
+                data.costs.monthTotalTokens > 0
+                  ? formatTokens(data.costs.monthTotalTokens)
+                  : formatCents(data.costs.monthSpendCents)
+              }
+              label="Inference Usage"
               to="/costs"
               description={
                 <span>
-                  {data.costs.monthBudgetCents > 0
-                    ? `${data.costs.monthUtilizationPercent}% of ${formatCents(data.costs.monthBudgetCents)} budget`
-                    : "Unlimited budget"}
+                  {formatCents(data.costs.monthSpendCents)} metered spend
+                  {data.costs.monthTotalTokens > 0
+                    ? ` · in ${formatTokens(data.costs.monthInputTokens)}, out ${formatTokens(data.costs.monthOutputTokens)}, cached ${formatTokens(data.costs.monthCachedInputTokens)}`
+                    : data.costs.monthBudgetCents > 0
+                      ? ` · ${data.costs.monthUtilizationPercent}% of ${formatCents(data.costs.monthBudgetCents)} budget`
+                      : " · Unlimited budget"}
                 </span>
               }
             />

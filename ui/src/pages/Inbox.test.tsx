@@ -240,7 +240,15 @@ function resetInboxApiMocks() {
   });
   apiMocks.dashboardSummary.mockResolvedValue({
     agents: { error: 0 },
-    costs: { monthBudgetCents: 0, monthUtilizationPercent: 0 },
+    costs: {
+      monthSpendCents: 0,
+      monthBudgetCents: 0,
+      monthUtilizationPercent: 0,
+      monthInputTokens: 0,
+      monthCachedInputTokens: 0,
+      monthOutputTokens: 0,
+      monthTotalTokens: 0,
+    },
   });
   apiMocks.executionWorkspaceSummaries.mockResolvedValue([]);
   apiMocks.issuesList.mockResolvedValue([]);
