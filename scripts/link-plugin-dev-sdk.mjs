@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { existsSync, mkdirSync, lstatSync, rmSync, symlinkSync } from "node:fs";
+import { existsSync, mkdirSync, lstatSync, readlinkSync, rmSync, symlinkSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -30,6 +30,19 @@ try {
 }
 
 const relativeSdkDir = relative(scopeDir, sdkDir);
-symlinkSync(relativeSdkDir, linkTarget, "dir");
+
+try {
+  symlinkSync(relativeSdkDir, linkTarget, "dir");
+} catch (err) {
+  if (err?.code === "EEXIST") {
+    const stat = lstatSync(linkTarget);
+    if (stat.isSymbolicLink() && readlinkSync(linkTarget) === relativeSdkDir) {
+      console.log(`  ✓ Local @paperclipai/plugin-sdk already linked for ${packageDir}`);
+      process.exit(0);
+    }
+  }
+
+  throw err;
+}
 
 console.log(`  ✓ Linked local @paperclipai/plugin-sdk for ${packageDir}`);
